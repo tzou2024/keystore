@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -43,9 +44,11 @@ func keyValuePutHandler(w http.ResponseWriter, r *http.Request) {
 			http.StatusInternalServerError)
 		return
 	}
-
+	fmt.Println("writing: ", string(value))
+	transact.WritePut(key, string(value))
 	// if everthing went well, return status created
 	w.WriteHeader(http.StatusCreated)
+	log.Printf("PUT key=%s value=%s\n", key, string(value))
 }
 
 func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +83,8 @@ func keyValueGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// if everything went well, retrn the val
 	w.Write([]byte(val))
+
+	log.Printf("GET key=%s\n", key)
 }
 
 func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +98,8 @@ func keyValueDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	transact.WriteDelete(key)
+
 	log.Printf("DELETE key=%s\n", key)
 
 }
@@ -102,6 +109,10 @@ func helloMuxHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	err := initalizeTransactionLog()
+	if err != nil {
+		panic(err)
+	}
 	r := mux.NewRouter()
 
 	r.Use(loggingMiddleware)

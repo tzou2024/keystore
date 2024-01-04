@@ -3,8 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 )
+
+var transact TransactionLogger
 
 type TransactionLogger interface {
 	WriteDelete(key string)
@@ -122,19 +125,17 @@ func (l *FileTranscationLogger) ReadEvents() (<-chan Event, <-chan error) {
 	return outEvent, outError
 }
 
-var logger TransactionLogger
-
 func initalizeTransactionLog() error {
 	var err error
 
-	logger, err = NewFileTransactionLogger("transaction.log")
+	transact, err = NewFileTransactionLogger("transaction.log")
 	if err != nil {
 		return fmt.Errorf("failed to create event logger: %w", err)
 	}
 
-	events, errors := logger.ReadEvents()
+	events, errors := transact.ReadEvents()
 	e, ok := Event{}, true
-
+	count := 0
 	if ok && err == nil {
 		select {
 		case err, ok = <-errors: // Retreive any errors
@@ -142,11 +143,14 @@ func initalizeTransactionLog() error {
 			switch e.EventType {
 			case EventDelete:
 				err = Delete(e.Key) //Got a Delete event!
+				count++
 			case EventPut:
 				err = Put(e.Key, e.Value) // Got a PUT
+				count++
 			}
 		}
 	}
-	logger.Run()
+	log.Printf("%d events replayed\n", count)
+	transact.Run()
 	return err
 }
