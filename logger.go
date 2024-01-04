@@ -127,8 +127,13 @@ func (l *FileTranscationLogger) ReadEvents() (<-chan Event, <-chan error) {
 
 func initalizeTransactionLog() error {
 	var err error
+	transact, err = NewPostgresTransactionLogger(PostgresDBParams{
+		host:     "localhost",
+		dbName:   "kvs",
+		user:     "yourname",
+		password: "yourpassword",
+	})
 
-	transact, err = NewFileTransactionLogger("transaction.log")
 	if err != nil {
 		return fmt.Errorf("failed to create event logger: %w", err)
 	}
